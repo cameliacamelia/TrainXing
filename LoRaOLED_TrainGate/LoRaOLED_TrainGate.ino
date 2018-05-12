@@ -5,6 +5,13 @@
 #include <LoRa.h>
 #include "SSD1306.h"
 
+
+// 0 - error or other than 1-3
+// 1 - normal
+// 2 - train from left
+// 3 - train from right
+int state = 1;
+
 SSD1306 display(0x3c, 4, 15);
 
 //OLED pins to ESP32 GPIOs via this connection:
@@ -57,8 +64,11 @@ SSD1306 display(0x3c, 4, 15);
 #define LED1_PIN           13
 #define LED2_PIN           12
 
-int brightness = 0;    // how bright the LED is
-int fadeAmount = 20;    // how many points to fade the LED by
+int brightness1 = 0;    // how bright the LED is
+int fadeAmount1 = 20;    // how many points to fade the LED by
+
+int brightness2 = 0;    // how bright the LED is
+int fadeAmount2 = 20;    // how many points to fade the LED by
 long now, lastLED1Time, lastLED2Time, deltaTime;
 
 // Arduino like analogWrite
@@ -86,30 +96,39 @@ void setupLEDChanngel1(){
 
 void loopLEDChannel0(){
     // set the brightness on LEDC channel 0
-  ledcAnalogWrite(LEDC_CHANNEL_0, brightness);
+  ledcAnalogWrite(LEDC_CHANNEL_0, brightness1);
 
   // change the brightness for next time through the loop:
-  brightness = brightness + fadeAmount;
+  brightness1 = brightness1 + fadeAmount1;
 
   // reverse the direction of the fading at the ends of the fade:
-  if (brightness <= 0 || brightness >= 255) {
-    fadeAmount = -fadeAmount;
+  if (brightness1 <= 0 || brightness1 >= 255) {
+    fadeAmount1 = -fadeAmount1;
   }
 }
 
 void loopLEDChannel1(){
     // set the brightness on LEDC channel 0
-  ledcAnalogWrite(LEDC_CHANNEL_1, brightness);
+  ledcAnalogWrite(LEDC_CHANNEL_1, brightness2);
 
   // change the brightness for next time through the loop:
-  brightness = brightness + fadeAmount;
+  brightness2 = brightness2 + fadeAmount2;
 
   // reverse the direction of the fading at the ends of the fade:
-  if (brightness <= 0 || brightness >= 255) {
-    fadeAmount = -fadeAmount;
+  if (brightness2 <= 0 || brightness2 >= 255) {
+    fadeAmount2 = -fadeAmount2;
   }
 }
-  
+
+void stopLED1(){
+  ledcAnalogWrite(LEDC_CHANNEL_0, 0);
+  brightness1 = 0;
+}
+
+void stopLED2(){
+  ledcAnalogWrite(LEDC_CHANNEL_1, 0);
+  brightness2 = 0;
+}
 void setup() {
   pinMode(16,OUTPUT);
   digitalWrite(16, LOW); // set GPIO16 low to reset OLED
@@ -121,7 +140,7 @@ void setup() {
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
   
-  Serial.begin(57600);
+  Serial.begin(115200);
   while (!Serial); //if just the the basic function, must connect to a computer
   delay(1000);
   
@@ -181,6 +200,29 @@ void loop() {
     // read packet
     while (LoRa.available()) {
       String data = LoRa.readString();
+
+      if (state == 1){
+        if (data.startsWith("TD01")){
+          state = 2;
+        }  
+
+        if (data.startsWith("TD02")){
+          state = 3;
+        }
+      }
+
+      if (state == 2){
+        if (data.startsWith("TD02")){
+          state = 1;
+        }  
+      }
+      
+      if (state == 3){
+        if (data.startsWith("TD01")){
+          state = 1;
+        }  
+      }
+      
       Serial.print(data);
       display.drawString(20,22, data);
       display.display();
@@ -201,19 +243,25 @@ void loop() {
 
   now = millis();
 
-  deltaTime = now - lastLED1Time;
-
-  if (deltaTime > 100){
-     loopLEDChannel0();
-     loopLEDChannel1();
-     lastLED1Time = now;
+  if (state == 2 || state == 3){
+    stopLED1();
+    deltaTime = now - lastLED2Time;
+    if (deltaTime > 50){
+       loopLEDChannel1();
+       lastLED2Time = now;
+    }
   }
+  else if (state == 1) {
+    stopLED2();
+    deltaTime = now - lastLED1Time;
 
-  deltaTime = now - lastLED2Time;
-  
-  if (deltaTime > 50){
-     loopLEDChannel1();
-     lastLED2Time = now;
+    if (deltaTime > 100){
+       loopLEDChannel0();
+       lastLED1Time = now;
+    }
+  } else {
+    stopLED1();
+    stopLED2();
   }
-  
+ 
 }
