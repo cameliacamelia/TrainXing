@@ -12,6 +12,9 @@
 // 3 - train from right
 int state = 1;
 
+long lastTimeHeartBeat01;
+long lastTimeHeartBeat02;
+
 SSD1306 display(0x3c, 4, 15);
 
 //OLED pins to ESP32 GPIOs via this connection:
@@ -200,6 +203,21 @@ void loop() {
     // read packet
     while (LoRa.available()) {
       String data = LoRa.readString();
+      Serial.print("Received: "); Serial.println(data);
+
+        
+      if (data.startsWith("HB01")){
+        
+        lastTimeHeartBeat01 = millis();
+      }
+
+      if (data.startsWith("HB02")){
+        lastTimeHeartBeat02 = millis();
+      }
+// 0 - error or other than 1-3
+// 1 - normal
+// 2 - train from left
+// 3 - train from right
 
       if (state == 1){
         if (data.startsWith("TD01")){
@@ -243,7 +261,21 @@ void loop() {
 
   now = millis();
 
-  if (state == 2 || state == 3){
+  deltaTime = now - lastTimeHeartBeat01;
+  if (deltaTime > 5000){
+    state = 0;
+  }
+
+  deltaTime = now - lastTimeHeartBeat02;
+  if (deltaTime > 5000){
+    state = 0;
+  }
+  
+  if (state == 0){
+    stopLED1();
+    stopLED2();
+  }
+  else if (state == 2 || state == 3){
     stopLED1();
     deltaTime = now - lastLED2Time;
     if (deltaTime > 50){

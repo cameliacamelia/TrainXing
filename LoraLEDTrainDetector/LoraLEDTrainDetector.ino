@@ -8,6 +8,7 @@
 
 
 String trainDetectorMessage = "TD01";
+String heartBeatMessage = "HB01";
 
 //OLED pins to ESP32 GPIOs via this connecthin:
 //OLED_SDA — GPIO4
@@ -97,6 +98,7 @@ void setup() {
   //24 hapended to be the second one
   if(chipid[5] == 0x24 ){
     trainDetectorMessage = "TD02";
+    heartBeatMessage = "HB02";
   }
   
 }
@@ -104,28 +106,45 @@ void setup() {
 int overValuesCounter = 0;
 int clearCounter = 0;
 
+int trainDetected = 0;
+
+long lastHeartBeat = 0;
+long delta;
+long now;
 
 void loop() {
+  now = millis();
+  delta = now - lastHeartBeat;
+  if (delta > 2000){
+    LoRa.beginPacket();
+    LoRa.print(heartBeatMessage);
+    LoRa.endPacket();
+    Serial.println(heartBeatMessage);
+    lastHeartBeat = now;
+  }
+  
   int analog_value = analogRead(12);
 
-  int trainDetectorMessageEnd=
-  Serial.print(trainDetectorMessage);
-  Serial.println(analog_value);
+//  int trainDetectorMessageEnd=
+//  Serial.print(trainDetectorMessage);
+//  Serial.println(analog_value);
  
   if (analog_value > 2000){
     overValuesCounter++;
     if (overValuesCounter > 3){
-      LoRa.beginPacket();
-      LoRa.print(trainDetectorMessage);
-      LoRa.print(counter);
-      LoRa.endPacket();
-      Serial.println("Train detected!");
-      display.clear();
-      display.setFont(ArialMT_Plain_16);
-      display.drawString(5,20, "Train detected!");
-      display.display();
+      if (trainDetected == 0){
+        LoRa.beginPacket();
+        LoRa.print(trainDetectorMessage);
+        LoRa.endPacket();
+        Serial.println("Train detected!");
+        display.clear();
+        display.setFont(ArialMT_Plain_16);
+        display.drawString(5,20, "Train detected!");
+        display.display();
+      }
       overValuesCounter = 0;
       clearCounter = 0;
+      trainDetected = 1;
     }
   }
   else{
@@ -135,10 +154,13 @@ void loop() {
       display.clear();
       display.setFont(ArialMT_Plain_16);
       display.display();
+      trainDetected = 0;
     }
   }
   delay(30);
 }
+
+
 //
 //void sendTestPacket(){
 //  Serial.print("Sending packet: ");
