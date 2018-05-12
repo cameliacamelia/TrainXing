@@ -44,7 +44,7 @@ SSD1306 display(0x3c, 4, 15);
 int counter = 0;
 
 void setup() {
-  pinMode(25,OUTPUT); //Send success, LED will bright 1 second
+  //pinMode(25,OUTPUT); //Send success, LED will bright 1 second
   
   pinMode(16,OUTPUT);
   digitalWrite(16, LOW); // set GPIO16 low to reset OLED
@@ -52,7 +52,8 @@ void setup() {
   digitalWrite(16, HIGH);
   
   Serial.begin(115200);
-  while (!Serial); //If just the the basic function, must connect to a computer
+  //while (!Serial); //If just the the basic function, must connect to a computer
+  delay(1000);
 
 // Initialising the UI will init the display too.
   display.init();
@@ -88,14 +89,29 @@ void setup() {
   display.drawString(5,20,"LoRa Initializing OK!");
   display.display();
   delay(2000);
+
+  uint8_t chipid[6];
+  esp_efuse_read_mac(chipid);
+  Serial.printf("%02x:%02x:%02x:%02x:%02x:%02x\n",chipid[0], chipid[1], chipid[2], chipid[3], chipid[4], chipid[5]);   
+
+  //24 hapended to be the second one
+  if(chipid[5] == 0x24 ){
+    trainDetectorMessage = "TD02";
+  }
+  
 }
 
 int overValuesCounter = 0;
 int clearCounter = 0;
 
+
 void loop() {
   int analog_value = analogRead(12);
+
+  int trainDetectorMessageEnd=
+  Serial.print(trainDetectorMessage);
   Serial.println(analog_value);
+ 
   if (analog_value > 2000){
     overValuesCounter++;
     if (overValuesCounter > 3){
