@@ -31,12 +31,11 @@ SSD1306 display(0x3c, 4, 15);
 #define SS 18
 #define RST 14
 #define DI0 26
-#define BAND 866E6
+#define BAND 915E6
 
 // LoRa Settings
-
 #define spreadingFactor 12
-#define SignalBandwidth 7.8E3
+#define SignalBandwidth 62.5E3
 
 #define codingRateDenominator 5
 

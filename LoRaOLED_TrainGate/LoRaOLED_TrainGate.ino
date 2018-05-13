@@ -36,12 +36,12 @@ SSD1306 display(0x3c, 4, 15);
 #define SS 18
 #define RST 14
 #define DI0 26
-#define BAND 866E6
+#define BAND 915E6
 
 // LoRa Settings
 
-#define spreadingFactor 7
-#define SignalBandwidth 125E3
+#define spreadingFactor 12
+#define SignalBandwidth 62.5E3
 
 #define codingRateDenominator 5
 
@@ -165,6 +165,7 @@ void setup() {
   Serial.print("LoRa Spreading Factor: ");
   Serial.println(spreadingFactor);
   LoRa.setSpreadingFactor(spreadingFactor);
+  LoRa.enableCrc();
   
   Serial.print("LoRa Signal Bandwidth: ");
   Serial.println(SignalBandwidth);
@@ -197,7 +198,7 @@ void loop() {
     
     display.clear();
     display.setFont(ArialMT_Plain_16);
-    display.drawString(3, 0, "Received packet ");
+    display.drawString(3, 0, "Received pkt:");
     display.display();
     
     // read packet
@@ -225,7 +226,7 @@ void loop() {
         }  
 
         if (data.startsWith("TD02")){
-          state = 3;
+         // state = 3;
         }
       }
 
@@ -254,31 +255,47 @@ void loop() {
     // display.drawString(0, 45, "RSSI: ");
     // display.drawString(50, 45, (String)LoRa.packetRssi());
     
-    display.drawString(0, 45, (String)LoRa.packetRssi() + "dB (" + (String)LoRa.packetSnr() +"dB)");
+    display.drawString(0, 45, (String)LoRa.packetRssi() + "dB(" + (String)LoRa.packetSnr() +") s:"+(String) state);
+
+      
         
     display.display();
   }
 
   now = millis();
 
+
+  int heartBeat01Received = 0;
+  int heartBeat02Received = 0;
+
+  
   deltaTime = now - lastTimeHeartBeat01;
   if (deltaTime > 5000){
     state = 0;
+  }
+  else{
+    heartBeat01Received = 1;
   }
 
   deltaTime = now - lastTimeHeartBeat02;
   if (deltaTime > 5000){
     state = 0;
   }
+  else{
+    heartBeat01Received = 1;
+  }
   
   if (state == 0){
     stopLED1();
     stopLED2();
+    if (heartBeat01Received == 1 && heartBeat01Received == 1){
+      state = 1;
+    }
   }
   else if (state == 2 || state == 3){
     stopLED1();
     deltaTime = now - lastLED2Time;
-    if (deltaTime > 50){
+    if (deltaTime > 100){
        loopLEDChannel1();
        lastLED2Time = now;
     }
