@@ -270,7 +270,7 @@ void loop() {
 
   
   deltaTime = now - lastTimeHeartBeat01;
-  if (deltaTime > 5000){
+  if (deltaTime > 9000){
     state = 0;
   }
   else{
@@ -278,7 +278,7 @@ void loop() {
   }
 
   deltaTime = now - lastTimeHeartBeat02;
-  if (deltaTime > 5000){
+  if (deltaTime > 9000){
     state = 0;
   }
   else{

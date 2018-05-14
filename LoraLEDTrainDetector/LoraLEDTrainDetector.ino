@@ -114,7 +114,7 @@ long now;
 void loop() {
   now = millis();
   delta = now - lastHeartBeat;
-  if (delta > 2000){
+  if (delta > 3000){
     LoRa.beginPacket();
     LoRa.print(heartBeatMessage);
     LoRa.endPacket();
